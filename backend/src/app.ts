@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import type { Db } from "./db/client.js";
 import { AppError } from "./errors.js";
 import { employeesRouter } from "./routes/employees.js";
+import { insightsRouter } from "./routes/insights.js";
 
 // Builds the Express app without starting a server,
 // so tests can call it directly with their own database.
@@ -14,6 +15,7 @@ export function createApp(db: Db) {
     res.json({ status: "ok" });
   });
   app.use("/api/employees", employeesRouter(db));
+  app.use("/api/insights", insightsRouter(db));
 
   app.use(errorHandler);
   return app;
