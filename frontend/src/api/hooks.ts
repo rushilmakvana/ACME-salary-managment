@@ -1,7 +1,9 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, toQuery } from "./client";
 import type {
+  CountryInsight,
   CreateEmployeeInput,
+  JobTitleInsights,
   EmployeeDetail,
   EmployeeFilters,
   EmployeePage,
@@ -24,6 +26,21 @@ export function useEmployees(filters: EmployeeFilters) {
     queryFn: () => api<EmployeePage>(`/employees${toQuery({ ...filters, pageSize: 25 })}`),
     // Keep showing the current page while the next one loads, instead of flashing empty.
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useCountryInsights() {
+  return useQuery({
+    queryKey: ["insights", "countries"],
+    queryFn: () => api<CountryInsight[]>("/insights/countries"),
+  });
+}
+
+export function useJobTitleInsights(country: string | undefined) {
+  return useQuery({
+    queryKey: ["insights", "job-titles", country],
+    queryFn: () => api<JobTitleInsights>(`/insights/countries/${country}/job-titles`),
+    enabled: country !== undefined, // only once a country is picked
   });
 }
 

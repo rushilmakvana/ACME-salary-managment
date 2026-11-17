@@ -63,6 +63,27 @@ export type CreateEmployeeInput = EmployeeDetailsInput & { hireDate: string; sal
 
 export type UpdateEmployeeInput = EmployeeDetailsInput & { newSalary?: SalaryChangeInput };
 
+export type PayStats = {
+  headcount: number;
+  min: number;
+  median: number;
+  average: number;
+  max: number;
+};
+
+export type CountryInsight = PayStats & {
+  country: string;
+  countryName: string;
+  currency: string;
+};
+
+export type JobTitleInsights = {
+  country: string;
+  countryName: string;
+  currency: string;
+  jobTitles: (PayStats & { jobTitle: string; department: string })[];
+};
+
 export type Options = {
   countries: { code: string; name: string; currency: string }[];
   departments: string[];
