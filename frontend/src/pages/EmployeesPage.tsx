@@ -1,6 +1,7 @@
 import {
   Alert,
   Anchor,
+  Button,
   Group,
   Loader,
   Pagination,
@@ -11,10 +12,11 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-import { useDebouncedValue } from "@mantine/hooks";
+import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useEmployees, useOptions } from "../api/hooks";
+import { EmployeeFormModal } from "../components/EmployeeFormModal";
 import { formatMoney } from "../lib/format";
 
 export function EmployeesPage() {
@@ -51,6 +53,7 @@ export function EmployeesPage() {
   const options = useOptions();
   const employees = useEmployees(filters);
   const navigate = useNavigate();
+  const [addOpened, addForm] = useDisclosure(false);
 
   const countryName = (code: string) => options.data?.countries.find((c) => c.code === code)?.name ?? code;
   // Only show job titles from the chosen department.
@@ -61,11 +64,21 @@ export function EmployeesPage() {
   return (
     <Stack>
       <Group justify="space-between">
-        <Title order={2}>Employees</Title>
-        {employees.data && (
-          <Text c="dimmed">{employees.data.total.toLocaleString("en-US")} employees</Text>
-        )}
+        <Group align="baseline">
+          <Title order={2}>Employees</Title>
+          {employees.data && <Text c="dimmed">{employees.data.total.toLocaleString("en-US")} found</Text>}
+        </Group>
+        <Button onClick={addForm.open}>+ Add employee</Button>
       </Group>
+
+      {addOpened && (
+        <EmployeeFormModal
+          mode="create"
+          opened
+          onClose={addForm.close}
+          onCreated={(created) => navigate(`/employees/${created.id}`)}
+        />
+      )}
 
       <Group grow wrap="wrap" align="end">
         <TextInput
