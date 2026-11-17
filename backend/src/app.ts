@@ -4,6 +4,7 @@ import type { Db } from "./db/client.js";
 import { AppError } from "./errors.js";
 import { employeesRouter } from "./routes/employees.js";
 import { insightsRouter } from "./routes/insights.js";
+import { getOptions } from "./services/optionsService.js";
 
 // Builds the Express app without starting a server,
 // so tests can call it directly with their own database.
@@ -13,6 +14,9 @@ export function createApp(db: Db) {
 
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });
+  });
+  app.get("/api/options", async (_req, res) => {
+    res.json(await getOptions(db));
   });
   app.use("/api/employees", employeesRouter(db));
   app.use("/api/insights", insightsRouter(db));

@@ -95,6 +95,14 @@ export function updateEmployee(
   });
 }
 
+/** Every job title in use, with its department, sorted by department then title. */
+export function findJobTitles(db: Db) {
+  return db
+    .selectDistinct({ department: employees.department, jobTitle: employees.jobTitle })
+    .from(employees)
+    .orderBy(asc(employees.department), asc(employees.jobTitle));
+}
+
 export async function insertSalary(db: Db, salary: NewSalary) {
   await db.insert(salaries).values(salary);
 }
