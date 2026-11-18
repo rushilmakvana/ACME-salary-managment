@@ -2,6 +2,7 @@ import type { Db } from "../db/client.js";
 import { employees, salaries } from "../db/schema.js";
 import { generateSeedData } from "./generate.js";
 
+export const EMPLOYEE_COUNT = 10_000;
 const BATCH_SIZE = 500;
 
 /** Empties the tables, then fills them with generated employees and salaries. */

@@ -1,9 +1,8 @@
 // Command line entry: `npm run seed`
 import { mkdirSync } from "node:fs";
 import { createDb } from "../db/client.js";
-import { seedDatabase } from "./seed.js";
+import { EMPLOYEE_COUNT, seedDatabase } from "./seed.js";
 
-const EMPLOYEE_COUNT = 10_000;
 const url = process.env.DATABASE_URL ?? "file:data/salary.db";
 
 if (url.startsWith("file:")) mkdirSync("data", { recursive: true });
