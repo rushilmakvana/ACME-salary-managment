@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 // One row per person.
@@ -42,6 +42,16 @@ export const salaries = sqliteTable(
     check("salaries_amount_positive", sql`${t.amount} > 0`),
   ],
 );
+
+// Tells Drizzle how the tables connect, so queries can ask for
+// "an employee with their salaries" without writing joins by hand.
+export const employeesRelations = relations(employees, ({ many }) => ({
+  salaries: many(salaries),
+}));
+
+export const salariesRelations = relations(salaries, ({ one }) => ({
+  employee: one(employees, { fields: [salaries.employeeId], references: [employees.id] }),
+}));
 
 export type Employee = typeof employees.$inferSelect;
 export type NewEmployee = typeof employees.$inferInsert;

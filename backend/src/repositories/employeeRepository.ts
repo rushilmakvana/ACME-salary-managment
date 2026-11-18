@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, ne, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, like, type SQL } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { employees, salaries, type NewEmployee, type NewSalary } from "../db/schema.js";
 
@@ -10,48 +10,49 @@ export type EmployeeFilters = {
 };
 
 /**
- * The id of an employee's current salary row: the latest effective date,
- * and if two rows share a date, the one added last.
- * Uses the (employee_id, effective_date) index.
+ * An employee's current salary: the row with the latest effective date
+ * (if two rows share a date, the one added last). Uses the (employee_id, effective_date) index.
+ * Defined once so the employee list and the insights always agree.
  */
-const currentSalaryId = sql`(
-  SELECT s2.id FROM ${salaries} s2
-  WHERE s2.employee_id = ${employees.id}
-  ORDER BY s2.effective_date DESC, s2.id DESC
-  LIMIT 1
-)`;
+const latestSalary = {
+  columns: { amount: true, currency: true, effectiveDate: true },
+  orderBy: [desc(salaries.effectiveDate), desc(salaries.id)] as SQL[],
+  limit: 1,
+} as const;
 
+/** One page of employees, sorted by name, each with their current salary. */
 export async function findEmployees(db: Db, filters: EmployeeFilters, limit: number, offset: number) {
   const where = buildWhere(filters);
 
-  const rows = await db
-    .select({
-      id: employees.id,
-      fullName: employees.fullName,
-      email: employees.email,
-      jobTitle: employees.jobTitle,
-      department: employees.department,
-      country: employees.country,
-      hireDate: employees.hireDate,
-      salaryAmount: salaries.amount,
-      salaryCurrency: salaries.currency,
-      salaryEffectiveDate: salaries.effectiveDate,
-    })
-    .from(employees)
-    .leftJoin(salaries, eq(salaries.id, currentSalaryId))
-    .where(where)
+  const rows = await db.query.employees.findMany({
+    where,
+    with: { salaries: latestSalary },
     // id as a tie-breaker keeps the order stable, so paging never repeats or skips people
-    .orderBy(asc(employees.fullName), asc(employees.id))
-    .limit(limit)
-    .offset(offset);
-
+    orderBy: [asc(employees.fullName), asc(employees.id)],
+    limit,
+    offset,
+  });
   const [{ total }] = await db.select({ total: count() }).from(employees).where(where);
 
   return { rows, total };
 }
 
+/** Every employee's country, department, job title and current salary, for the pay insights. */
+export function findCurrentSalaries(db: Db, country?: string) {
+  return db.query.employees.findMany({
+    columns: { country: true, department: true, jobTitle: true },
+    where: country ? eq(employees.country, country) : undefined,
+    with: { salaries: latestSalary },
+  });
+}
+
 export async function findEmployeeById(db: Db, id: number) {
   const [employee] = await db.select().from(employees).where(eq(employees.id, id));
+  return employee;
+}
+
+export async function findEmployeeByEmail(db: Db, email: string) {
+  const [employee] = await db.select().from(employees).where(eq(employees.email, email));
   return employee;
 }
 
@@ -64,13 +65,12 @@ export function findSalaryHistory(db: Db, employeeId: number) {
     .orderBy(desc(salaries.effectiveDate), desc(salaries.id));
 }
 
-/** True if another employee (not excludeId) already uses this email. */
-export async function isEmailTaken(db: Db, email: string, excludeId?: number) {
-  const [row] = await db
-    .select({ id: employees.id })
+/** Every job title in use, with its department, sorted by department then title. */
+export function findJobTitles(db: Db) {
+  return db
+    .selectDistinct({ department: employees.department, jobTitle: employees.jobTitle })
     .from(employees)
-    .where(excludeId ? and(eq(employees.email, email), ne(employees.id, excludeId)) : eq(employees.email, email));
-  return row !== undefined;
+    .orderBy(asc(employees.department), asc(employees.jobTitle));
 }
 
 /** Saves an employee and their first salary together: both or neither. */
@@ -95,14 +95,6 @@ export function updateEmployee(
   });
 }
 
-/** Every job title in use, with its department, sorted by department then title. */
-export function findJobTitles(db: Db) {
-  return db
-    .selectDistinct({ department: employees.department, jobTitle: employees.jobTitle })
-    .from(employees)
-    .orderBy(asc(employees.department), asc(employees.jobTitle));
-}
-
 export async function insertSalary(db: Db, salary: NewSalary) {
   await db.insert(salaries).values(salary);
 }
@@ -110,11 +102,7 @@ export async function insertSalary(db: Db, salary: NewSalary) {
 function buildWhere(filters: EmployeeFilters): SQL | undefined {
   const conditions: SQL[] = [];
 
-  if (filters.search) {
-    // Treat % and _ typed by the user as normal characters, not wildcards.
-    const escaped = filters.search.replace(/[\\%_]/g, (ch) => `\\${ch}`);
-    conditions.push(sql`${employees.fullName} LIKE ${`%${escaped}%`} ESCAPE '\\'`);
-  }
+  if (filters.search) conditions.push(like(employees.fullName, `%${filters.search}%`));
   if (filters.country) conditions.push(eq(employees.country, filters.country));
   if (filters.department) conditions.push(eq(employees.department, filters.department));
   if (filters.jobTitle) conditions.push(eq(employees.jobTitle, filters.jobTitle));

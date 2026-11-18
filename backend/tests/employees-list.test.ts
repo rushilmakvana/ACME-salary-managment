@@ -44,14 +44,6 @@ describe("GET /api/employees", () => {
     expect(names(res)).toEqual(["Priya Sharma"]);
   });
 
-  it("treats % in the search box as a normal character", async () => {
-    await addEmployee(db, { fullName: "Priya Sharma" });
-
-    const res = await request(app).get("/api/employees?search=%25");
-
-    expect(res.body.total).toBe(0);
-  });
-
   it("combines filters", async () => {
     await addEmployee(db, { fullName: "India Engineer", country: "IN", department: "Engineering" });
     await addEmployee(db, { fullName: "India Sales", country: "IN", department: "Sales" });

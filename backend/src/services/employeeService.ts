@@ -13,13 +13,7 @@ export async function listEmployees(db: Db, input: ListEmployeesInput) {
   const { rows, total } = await repo.findEmployees(db, filters, pageSize, (page - 1) * pageSize);
 
   return {
-    items: rows.map(({ salaryAmount, salaryCurrency, salaryEffectiveDate, ...employee }) => ({
-      ...employee,
-      currentSalary:
-        salaryAmount === null
-          ? null
-          : { amount: salaryAmount, currency: salaryCurrency!, effectiveDate: salaryEffectiveDate! },
-    })),
+    items: rows.map(({ salaries, ...employee }) => ({ ...employee, currentSalary: salaries[0] ?? null })),
     page,
     pageSize,
     total,
@@ -91,8 +85,10 @@ export async function changeSalary(db: Db, id: number, input: SalaryChangeInput)
   return getEmployee(db, id);
 }
 
-async function assertEmailFree(db: Db, email: string, excludeId?: number) {
-  if (await repo.isEmailTaken(db, email, excludeId)) {
+/** The email must not belong to anyone else (an employee keeping their own email is fine). */
+async function assertEmailFree(db: Db, email: string, employeeId?: number) {
+  const owner = await repo.findEmployeeByEmail(db, email);
+  if (owner && owner.id !== employeeId) {
     throw conflict("This email is already used by another employee", "email");
   }
 }
