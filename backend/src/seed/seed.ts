@@ -8,15 +8,19 @@ const BATCH_SIZE = 500;
 export async function seedDatabase(db: Db, count: number, seed = 42) {
   const data = generateSeedData(count, seed);
 
-  // Many rows per insert, all sent as one batch (one transaction):
-  // much faster than 10,000+ single inserts, and all-or-nothing.
-  const [clearSalaries, ...rest] = [
-    db.delete(salaries),
-    db.delete(employees),
-    ...chunk(data.employees, BATCH_SIZE).map((rows) => db.insert(employees).values(rows)),
-    ...chunk(data.salaries, BATCH_SIZE).map((rows) => db.insert(salaries).values(rows)),
-  ];
-  await db.batch([clearSalaries, ...rest]);
+  // One transaction: all-or-nothing.
+  // Inserting 500 rows per statement is much faster than 10,000+ single inserts.
+  await db.transaction(async (tx) => {
+    await tx.delete(salaries);
+    await tx.delete(employees);
+
+    for (const rows of chunk(data.employees, BATCH_SIZE)) {
+      await tx.insert(employees).values(rows);
+    }
+    for (const rows of chunk(data.salaries, BATCH_SIZE)) {
+      await tx.insert(salaries).values(rows);
+    }
+  });
 
   return { employees: data.employees.length, salaries: data.salaries.length };
 }

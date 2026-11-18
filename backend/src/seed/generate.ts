@@ -8,14 +8,12 @@ import {
   LAST_NAMES,
   payRange,
 } from "./data.js";
-import { createRandom, type Random } from "./random.js";
+import { createRandom } from "./random.js";
 
+const FIRST_HIRE_YEAR = 2015;
+const LAST_HIRE_YEAR = 2025;
 const RAISE_CHANCE = 0.3; // about 30% of eligible employees get one raise
-const DAY = 24 * 60 * 60 * 1000;
-const HIRE_START = Date.UTC(2015, 0, 1);
-const HIRE_END = Date.UTC(2026, 5, 30);
-const RAISE_ELIGIBLE_BEFORE = Date.UTC(2025, 0, 1); // hired early enough to have had a raise
-const LATEST_RAISE = Date.UTC(2026, 6, 1);
+const LAST_RAISE_YEAR = 2025; // keeps every raise in the past
 
 export type SeedData = { employees: NewEmployee[]; salaries: NewSalary[] };
 
@@ -34,7 +32,10 @@ export function generateSeedData(count: number, seed = 42): SeedData {
     const country = random.weighted(COUNTRY_WEIGHTS);
     const department = random.weighted(DEPARTMENT_WEIGHTS);
     const job = random.weighted(DEPARTMENTS[department].map((j) => [j, j.weight] as const));
-    const hired = randomDay(random, HIRE_START, HIRE_END);
+    const hireYear = random.int(FIRST_HIRE_YEAR, LAST_HIRE_YEAR);
+    const hireMonth = random.int(1, 12);
+    const hireDay = random.int(1, 28); // 28 is valid in every month
+    const hireDate = isoDate(hireYear, hireMonth, hireDay);
     const currency = currencyFor(country);
 
     employees.push({
@@ -44,7 +45,7 @@ export function generateSeedData(count: number, seed = 42): SeedData {
       jobTitle: job.title,
       department,
       country,
-      hireDate: toIsoDate(hired),
+      hireDate,
     });
 
     const range = payRange(job, country);
@@ -53,12 +54,13 @@ export function generateSeedData(count: number, seed = 42): SeedData {
       employeeId: id,
       amount: joinedAmount,
       currency,
-      effectiveDate: toIsoDate(hired),
+      effectiveDate: hireDate,
       reason: "Joined",
     });
 
-    if (hired < RAISE_ELIGIBLE_BEFORE && random.chance(RAISE_CHANCE)) {
-      const raisedOn = randomDay(random, hired + 365 * DAY, LATEST_RAISE);
+    // A raise lands on the hiring anniversary, 1-3 years later (always after hiring, never in the future).
+    if (hireYear < LAST_RAISE_YEAR && random.chance(RAISE_CHANCE)) {
+      const raiseYear = Math.min(hireYear + random.int(1, 3), LAST_RAISE_YEAR);
       const percent = random.int(5, 15);
       // Rounding must never turn a raise into "the same amount".
       const raisedAmount = Math.max(roundToThousand(joinedAmount * (1 + percent / 100)), joinedAmount + 1000);
@@ -66,7 +68,7 @@ export function generateSeedData(count: number, seed = 42): SeedData {
         employeeId: id,
         amount: raisedAmount,
         currency,
-        effectiveDate: toIsoDate(raisedOn),
+        effectiveDate: isoDate(raiseYear, hireMonth, hireDay),
         reason: "Annual raise",
       });
     }
@@ -75,12 +77,9 @@ export function generateSeedData(count: number, seed = 42): SeedData {
   return { employees, salaries };
 }
 
-function randomDay(random: Random, from: number, to: number): number {
-  return from + random.int(0, Math.floor((to - from) / DAY)) * DAY;
-}
-
-function toIsoDate(ms: number): string {
-  return new Date(ms).toISOString().slice(0, 10);
+/** isoDate(2019, 3, 4) → "2019-03-04" */
+function isoDate(year: number, month: number, day: number): string {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 function roundToThousand(n: number): number {
