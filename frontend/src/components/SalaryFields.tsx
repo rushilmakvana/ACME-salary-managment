@@ -1,20 +1,8 @@
 import { Group, NumberInput, Select, TextInput } from "@mantine/core";
-import type { SalaryChangeInput } from "../api/types";
 import { fieldError, SALARY_CHANGE_REASONS } from "../lib/forms";
 
+/** Form values for a salary change. Amount is "" while the box is empty. */
 export type SalaryDraft = { amount: number | ""; effectiveDate: string; reason: string };
-
-export const emptySalaryDraft = (effectiveDate: string, reason = "Annual raise"): SalaryDraft => ({
-  amount: "",
-  effectiveDate,
-  reason,
-});
-
-export const toSalaryInput = (draft: SalaryDraft): SalaryChangeInput => ({
-  amount: Number(draft.amount),
-  effectiveDate: draft.effectiveDate,
-  reason: draft.reason,
-});
 
 type Props = {
   value: SalaryDraft;
@@ -22,11 +10,11 @@ type Props = {
   currency: string;
   minDate?: string;
   error: unknown;
-  /** Prefix of the server field names, e.g. "newSalary." when nested. */
+  /** Prefix of the server's field names when nested, e.g. "newSalary." */
   fieldPrefix?: string;
 };
 
-/** Amount, date and reason for a salary change. Currency is shown, never chosen. */
+/** Amount, date and reason for a salary change. The currency is shown, never chosen. */
 export function SalaryFields({ value, onChange, currency, minDate, error, fieldPrefix = "" }: Props) {
   return (
     <Group grow align="start">

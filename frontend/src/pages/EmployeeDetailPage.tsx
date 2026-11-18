@@ -3,7 +3,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { Link, useParams } from "react-router";
 import { ApiError } from "../api/client";
 import { useEmployee, useOptions } from "../api/hooks";
-import { EmployeeFormModal } from "../components/EmployeeFormModal";
+import { EditEmployeeModal } from "../components/EditEmployeeModal";
 import { SalaryChangeModal } from "../components/SalaryChangeModal";
 import { formatDate, formatMoney } from "../lib/format";
 
@@ -97,8 +97,8 @@ export function EmployeeDetailPage() {
       </Table.ScrollContainer>
 
       {/* Mounted only while open, so each time it starts from the latest saved values. */}
-      {editOpened && <EmployeeFormModal mode="edit" employee={e} opened onClose={edit.close} />}
-      {salaryOpened && <SalaryChangeModal employee={e} opened onClose={salary.close} />}
+      {editOpened && <EditEmployeeModal employee={e} onClose={edit.close} />}
+      {salaryOpened && <SalaryChangeModal employee={e} onClose={salary.close} />}
     </Stack>
   );
 }

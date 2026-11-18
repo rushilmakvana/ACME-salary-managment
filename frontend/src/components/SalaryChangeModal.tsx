@@ -4,22 +4,27 @@ import { useChangeSalary } from "../api/hooks";
 import type { EmployeeDetail } from "../api/types";
 import { formatMoney } from "../lib/format";
 import { formError, todayIso } from "../lib/forms";
-import { emptySalaryDraft, SalaryFields, toSalaryInput } from "./SalaryFields";
+import { SalaryFields, type SalaryDraft } from "./SalaryFields";
 
-type Props = { employee: EmployeeDetail; opened: boolean; onClose: () => void };
+type Props = { employee: EmployeeDetail; onClose: () => void };
 
-export function SalaryChangeModal({ employee, opened, onClose }: Props) {
-  const [draft, setDraft] = useState(() => emptySalaryDraft(todayIso()));
+/** Shown only while open, so the form always starts empty. */
+export function SalaryChangeModal({ employee, onClose }: Props) {
+  const [salary, setSalary] = useState<SalaryDraft>({ amount: "", effectiveDate: todayIso(), reason: "Annual raise" });
   const changeSalary = useChangeSalary(employee.id);
   const current = employee.currentSalary;
-  const close = onClose; // mounted only while open, so no state to reset
+  const topError = formError(changeSalary.error, ["amount", "effectiveDate", "reason"]);
+
+  function submit() {
+    changeSalary.mutate({ ...salary, amount: Number(salary.amount) }, { onSuccess: onClose });
+  }
 
   return (
-    <Modal opened={opened} onClose={close} title={`Change salary: ${employee.fullName}`} size="lg">
+    <Modal opened onClose={onClose} title={`Change salary: ${employee.fullName}`} size="lg">
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          changeSalary.mutate(toSalaryInput(draft), { onSuccess: close });
+          submit();
         }}
       >
         <Stack>
@@ -29,17 +34,15 @@ export function SalaryChangeModal({ employee, opened, onClose }: Props) {
             </Text>
           )}
           <SalaryFields
-            value={draft}
-            onChange={setDraft}
+            value={salary}
+            onChange={setSalary}
             currency={current?.currency ?? ""}
             minDate={employee.hireDate}
             error={changeSalary.error}
           />
-          {formError(changeSalary.error, ["amount", "effectiveDate", "reason"]) && (
-            <Alert color="red">{formError(changeSalary.error, ["amount", "effectiveDate", "reason"])}</Alert>
-          )}
+          {topError && <Alert color="red">{topError}</Alert>}
           <Group justify="end">
-            <Button variant="default" onClick={close}>
+            <Button variant="default" onClick={onClose}>
               Cancel
             </Button>
             <Button type="submit" loading={changeSalary.isPending}>

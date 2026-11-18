@@ -16,7 +16,7 @@ import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useEmployees, useOptions } from "../api/hooks";
-import { EmployeeFormModal } from "../components/EmployeeFormModal";
+import { AddEmployeeModal } from "../components/AddEmployeeModal";
 import { formatMoney } from "../lib/format";
 
 export function EmployeesPage() {
@@ -72,12 +72,7 @@ export function EmployeesPage() {
       </Group>
 
       {addOpened && (
-        <EmployeeFormModal
-          mode="create"
-          opened
-          onClose={addForm.close}
-          onCreated={(created) => navigate(`/employees/${created.id}`)}
-        />
+        <AddEmployeeModal onClose={addForm.close} onCreated={(created) => navigate(`/employees/${created.id}`)} />
       )}
 
       <Group grow wrap="wrap" align="end">

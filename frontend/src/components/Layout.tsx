@@ -1,5 +1,5 @@
-import { AppShell, Container, Group, NavLink as MantineNavLink, Title } from "@mantine/core";
-import { NavLink, Outlet } from "react-router";
+import { AppShell, Button, Container, Group, Title } from "@mantine/core";
+import { Link, Outlet, useLocation } from "react-router";
 
 const links = [
   { to: "/employees", label: "Employees" },
@@ -7,17 +7,24 @@ const links = [
 ];
 
 export function Layout() {
+  const { pathname } = useLocation();
+
   return (
     <AppShell header={{ height: 60 }} padding="md">
       <AppShell.Header>
         <Container size="xl" h="100%">
           <Group h="100%" justify="space-between" wrap="nowrap">
             <Title order={4}>ACME Salary Management</Title>
-            <Group gap={4} wrap="nowrap">
+            <Group gap="xs" wrap="nowrap">
               {links.map((link) => (
-                <NavLink key={link.to} to={link.to} style={{ textDecoration: "none" }}>
-                  {({ isActive }) => <MantineNavLink component="span" label={link.label} active={isActive} />}
-                </NavLink>
+                <Button
+                  key={link.to}
+                  component={Link}
+                  to={link.to}
+                  variant={pathname.startsWith(link.to) ? "light" : "subtle"} // highlight the current page
+                >
+                  {link.label}
+                </Button>
               ))}
             </Group>
           </Group>
