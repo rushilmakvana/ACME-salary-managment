@@ -61,6 +61,10 @@ export function EmployeesPage() {
     .filter((j) => !filters.department || j.department === filters.department)
     .map((j) => j.jobTitle);
 
+  // Row numbers for "Showing 26–50 of 10,000" under the table.
+  const firstRow = employees.data ? (employees.data.page - 1) * employees.data.pageSize + 1 : 0;
+  const lastRow = employees.data ? firstRow + employees.data.items.length - 1 : 0;
+
   return (
     <Stack>
       <Group justify="space-between">
@@ -163,15 +167,19 @@ export function EmployeesPage() {
               </Table>
             </Table.ScrollContainer>
 
-            {employees.data.totalPages > 1 && (
-              <Group justify="center">
+            <Group justify="space-between">
+              <Text c="dimmed" size="sm">
+                Showing {firstRow.toLocaleString("en-US")}–{lastRow.toLocaleString("en-US")} of{" "}
+                {employees.data.total.toLocaleString("en-US")}
+              </Text>
+              {employees.data.totalPages > 1 && (
                 <Pagination
                   total={employees.data.totalPages}
                   value={filters.page}
                   onChange={(page) => update({ page: String(page) })}
                 />
-              </Group>
-            )}
+              )}
+            </Group>
           </>
         )
       )}
