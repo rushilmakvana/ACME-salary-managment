@@ -134,5 +134,5 @@ Tests use a fresh in-memory database, so they're fast and don't affect each othe
 
 ## 9. How we use AI
 
-We use Claude Code to write code faster, but every piece is reviewed and tested.
+We use Claude to write code faster, but every piece is reviewed and tested.
 Example prompts we used are listed in [AI_USAGE.md](AI_USAGE.md).
