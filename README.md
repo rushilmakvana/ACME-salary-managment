@@ -6,6 +6,8 @@ A web app for ACME's HR Manager to manage salaries for 10,000 employees across s
 
 **https://acme-salary-managment.onrender.com**
 
+**Video demo:** https://drive.google.com/file/d/10Eej-VEXjSbJJ-7hW0vv0YbgMCesnXOy/view?usp=sharing
+
 - The app runs on a free server that sleeps after about 15 minutes, so **the first load can take about 30 seconds**.
 - The demo data **resets to the 10,000 seeded employees** whenever the server restarts. See [Trade-offs](docs/TRADEOFFS.md).
 
